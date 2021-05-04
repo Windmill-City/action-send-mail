@@ -31,8 +31,8 @@ function getFrom(from, username) {
 
 async function main() {
     try {
-        const serverAddress = core.getInput("server_address", { required: true })
-        const serverPort = core.getInput("server_port", { required: true })
+        const serverAddress = core.getInput("server_address", { required: false })
+        const serverPort = core.getInput("server_port", { required: false })
         const username = core.getInput("username", { required: true })
         const password = core.getInput("password", { required: true })
         const subject = core.getInput("subject", { required: true })
@@ -48,9 +48,11 @@ async function main() {
         const convertMarkdown = core.getInput("convert_markdown", { required: false })
         const ignoreCert = core.getInput("ignore_cert", { required: false })
 
+        mailRegEx = /(\w+)@(\w+\.\w+\.\w+)?/
+        mailRegEx.test(username)
         const transport = nodemailer.createTransport({
-            host: serverAddress,
-            port: serverPort,
+            host: serverAddress ? serverAddress : "smtp." + RegExp.$2,
+            port: serverPort ? server_port : "465",
             secure: secure ? true : serverPort == "465",
             auth: {
                 user: username,
@@ -60,6 +62,11 @@ async function main() {
                 rejectUnauthorized: false
             } : undefined
         })
+
+        if (subject.startsWith("file://")){
+            const file = subject.replace("file://", "")
+            subject = fs.readFileSync(file, "utf8")
+        }
 
         const info = await transport.sendMail({
             from: getFrom(from, username),
